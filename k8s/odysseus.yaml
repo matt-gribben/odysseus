@@ -447,7 +447,7 @@ spec:
             - name: ODYSSEUS_ADMIN_USER
               value: admin
             - name: ALLOWED_ORIGINS
-              value: http://localhost,http://127.0.0.1,http://10.0.1.252,http://odysseus.homelab,https://odyssey.matthewgribben.com
+              value: http://localhost,http://127.0.0.1,http://10.0.1.252,http://mosaic.homelab,https://mosaic.matthewgribben.com
             - name: SECURE_COOKIES
               value: "true"
             - name: FASTEMBED_MODEL
@@ -512,7 +512,7 @@ metadata:
 spec:
   ingressClassName: public
   rules:
-    - host: odysseus.homelab
+    - host: mosaic.homelab
       http:
         paths:
           - path: /
@@ -532,10 +532,10 @@ spec:
   ingressClassName: public
   tls:
     - hosts:
-        - odyssey.matthewgribben.com
+        - mosaic.matthewgribben.com
       secretName: odysseus-origin-tls
   rules:
-    - host: odyssey.matthewgribben.com
+    - host: mosaic.matthewgribben.com
       http:
         paths:
           - path: /

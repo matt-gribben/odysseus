@@ -95,6 +95,27 @@ data:
 
     outgoing:
       request_timeout: 10.0
+
+    # Disable engines that fail on init due to missing external/network
+    # dependencies not available in this cluster.
+    engines:
+      - name: radio browser
+        disabled: true
+      - name: ahmia
+        disabled: true
+      - name: torch
+        disabled: true
+
+    # Disable the tracker URL remover plugin — it fetches ClearURLs rule lists
+    # from external URLs that are unreachable in this cluster, causing loud
+    # HTTPError warnings on every startup.
+    plugins:
+      - id: tracker_url_remover
+        active: false
+
+  # Empty limiter config to suppress "missing config file" log noise.
+  # The limiter itself is disabled via server.limiter: false above.
+  limiter.toml: ""
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -190,6 +211,12 @@ spec:
               if [ ! -s /etc/searxng/settings.yml ]; then
                 cp /tmp/searxng-settings.yml /etc/searxng/settings.yml
               fi
+              # Remove stale SQLite cache DBs from the PVC. SearXNG 2026.5.x
+              # introduced a new schema (properties table) that old DB files
+              # from previous versions don't have, causing radio_browser and
+              # other engines to fail on init with "no such table: properties".
+              # These files are caches only — safe to delete on every start.
+              rm -f /etc/searxng/*.db
               exec /usr/local/searxng/entrypoint.sh
           ports:
             - containerPort: 8080
@@ -212,6 +239,10 @@ spec:
             - name: settings
               mountPath: /tmp/searxng-settings.yml
               subPath: settings.yml
+              readOnly: true
+            - name: settings
+              mountPath: /etc/searxng/limiter.toml
+              subPath: limiter.toml
               readOnly: true
       volumes:
         - name: data

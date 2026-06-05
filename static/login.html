@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-visual">
-<title>Mosaic — Login</title>
+<title>Mosaic Login</title>
 <script nonce="{{CSP_NONCE}}">
 (function(){
   // Per-theme bg-effect defaults — mirrors THEME_DEFAULT_* maps in
   // static/js/theme.js so login picks the same default pattern as the
   // main app for users who never explicitly chose one.
   var THEME_DEFAULT_PATTERN = {
-    dark:'none', light:'dots', midnight:'rain', paper:'dots',
+    dark:'none', light:'none', mosaic:'none', midnight:'rain', paper:'dots',
     cyberpunk:'synapse', retrowave:'embers', forest:'petals',
     ocean:'constellations', terminal:'perlin-flow', organs:'rain',
     ume:'petals', cute:'sparkles'
@@ -50,6 +50,7 @@
         codeBg:          '--code-bg',
         codeFg:          '--code-fg',
         toggleActive:    '--toggle-active',
+        accentPrimary:   '--accent-primary',
       };
       for (var k in ADV) { if (a[k]) s.setProperty(ADV[k], a[k]); }
     }
@@ -82,15 +83,16 @@
 })();
 </script>
 <style>
-  @font-face { font-family: 'Fira Code'; font-weight: 400; font-style: normal; font-display: swap; src: url('/static/fonts/FiraCode-Regular.woff2') format('woff2'); }
-  @font-face { font-family: 'Fira Code'; font-weight: 600; font-style: normal; font-display: swap; src: url('/static/fonts/FiraCode-SemiBold.woff2') format('woff2'); }
+  @font-face { font-family: 'Inter'; font-weight: 400; font-style: normal; font-display: swap; src: url('/static/fonts/Inter-Regular.woff2') format('woff2'); }
+  @font-face { font-family: 'Inter'; font-weight: 500; font-style: normal; font-display: swap; src: url('/static/fonts/Inter-Medium.woff2') format('woff2'); }
+  @font-face { font-family: 'Inter'; font-weight: 600; font-style: normal; font-display: swap; src: url('/static/fonts/Inter-SemiBold.woff2') format('woff2'); }
   /* Mirror the main app's :root defaults (static/style.css ~line 18) so an
      uncustomized theme — or a fresh browser with no `odysseus-theme` in
      localStorage — renders the login page in the same palette as the rest
      of the app instead of a different greys+offwhite scheme. */
   :root {
-    --bg: #282c34; --fg: #9cdef2; --panel: #111; --border: #355a66;
-    --red: #e06c75; --green: #50fa7b;
+    --bg: #101114; --fg: #f1f2f4; --panel: #17191d; --border: #2d3037;
+    --red: #4f8cff; --accent: #4f8cff; --green: #53c281;
     --bg-effect-intensity: 1;
   }
   /* Background patterns — mirrors static/style.css "Background Patterns"
@@ -112,44 +114,44 @@
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: 'Fira Code', monospace;
-    background: var(--bg); color: var(--fg);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background:
+      radial-gradient(circle at 50% -20%, color-mix(in srgb, var(--accent, var(--red)) 12%, transparent), transparent 34rem),
+      var(--bg);
+    color: var(--fg);
     display: flex; justify-content: center; align-items: flex-start;
     min-height: 100vh; min-height: 100dvh;
     padding-top: 15vh;
     transition: padding-top 0.2s ease;
   }
   .card {
-    background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+    background: color-mix(in srgb, var(--panel) 88%, transparent); border: 1px solid color-mix(in srgb, var(--fg) 11%, transparent); border-radius: 20px;
     padding: 2rem; width: 360px; max-width: 90vw;
     /* Sit above the bg-effect canvases (which spawn at z-index:0) so the
        falling rain / drifting petals / etc. don't streak across the
        login form. */
     position: relative; z-index: 1;
+    box-shadow: 0 18px 60px rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(18px) saturate(150%);
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
   }
   .logo {
     text-align: center; margin-bottom: 1.5rem;
   }
   .logo span {
-    font-family: 'Fira Code', monospace;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     font-size: 2rem; font-weight: 600;
-    letter-spacing: 0.04em;
-    /* Same gradient as the main app's welcome-screen "Odysseus" title
-       (static/style.css #welcome-screen .welcome-name) so the brand
-       wordmark is consistent across login + first-launch screens. */
-    background: linear-gradient(135deg, var(--brand-color, var(--red)), color-mix(in srgb, var(--brand-color, var(--red)) 60%, var(--fg)));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    letter-spacing: -0.055em;
+    color: var(--brand-color, var(--fg));
   }
   .setup-note { color: color-mix(in srgb, var(--fg) 60%, transparent); font-size: 0.8rem; margin-bottom: 1rem; text-align: center; }
   label { display: block; font-size: 0.85rem; margin-bottom: 0.3rem; color: color-mix(in srgb, var(--fg) 65%, transparent); }
   input:not(.remember-check) {
     width: 100%; padding: 0.6rem 0.8rem; margin-bottom: 1rem;
-    background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
-    color: var(--fg); font-size: 0.95rem; font-family: 'Fira Code', monospace;
+    background: color-mix(in srgb, var(--bg) 72%, var(--panel)); border: 1px solid color-mix(in srgb, var(--fg) 12%, transparent); border-radius: 12px;
+    color: var(--fg); font-size: 0.95rem; font-family: inherit;
   }
-  input:focus { outline: none; border-color: var(--red); }
+  input:focus { outline: none; border-color: var(--accent, var(--red)); }
   /* On touch devices keep inputs at >=16px so iOS Safari doesn't zoom the whole
      page when a field is focused (it auto-zooms any focused input under 16px).
      This page has its own inline styles, so it doesn't inherit the main app's
@@ -168,13 +170,11 @@
     /* Asymmetric vertical padding nudges the label 1px down while keeping
        the button's total height the same as 0.7rem all-around. */
     padding: calc(0.7rem + 1px) 0.7rem calc(0.7rem - 1px);
-    border: none; border-radius: 6px;
-    /* Darken the brand red slightly so #fff label text clears the WCAG AA
-       4.5:1 contrast threshold (plain --red #e06c75 only reaches ~3.2:1). */
-    background: color-mix(in srgb, var(--red) 78%, #000); color: #fff; font-size: 1rem; cursor: pointer;
-    font-weight: 600; font-family: 'Fira Code', monospace;
+    border: none; border-radius: 999px;
+    background: var(--accent, var(--red)); color: #fff; font-size: 1rem; cursor: pointer;
+    font-weight: 600; font-family: inherit;
   }
-  button:hover { background: color-mix(in srgb, var(--red) 66%, black); }
+  button:hover { background: color-mix(in srgb, var(--accent, var(--red)) 84%, #0b0d11); }
   button:disabled { opacity: 0.5; cursor: not-allowed; }
   .error { color: #e55; font-size: 0.85rem; margin-bottom: 0.75rem; display: none; }
   .toggle { text-align: center; margin-top: calc(1rem + 4px); font-size: 0.85rem; color: color-mix(in srgb, var(--fg) 50%, transparent); }
@@ -332,7 +332,7 @@
     mode = m;
     errEl.style.display = 'none';
     if (m === 'setup') {
-      setupNote.textContent = 'First-time setup — create your admin account';
+      setupNote.textContent = 'First-time setup: create your admin account';
       setupNote.style.display = 'block';
       confirmGroup.style.display = 'block';
       submitBtn.textContent = 'Create Admin Account';

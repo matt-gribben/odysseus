@@ -10,7 +10,18 @@ import { snapModalToZone } from './tileManager.js';
 
 export const THEMES = {
   dark:       { bg:'#282c34', fg:'#9cdef2', panel:'#111111', border:'#355a66', red:'#e06c75' },
-  light:      { bg:'#f0ebe3', fg:'#5a5248', panel:'#faf6f0', border:'#d4cdc2', red:'#c47d5a' },
+  light:      { bg:'#f7f7f8', fg:'#17181b', panel:'#ffffff', border:'#d9dbe1', red:'#2563eb',
+                advanced: { brandColor:'#17181b', sendBtnBg:'#2563eb', sendBtnHover:'#1d4ed8',
+                            userBubbleBg:'#e8f0ff', aiBubbleBg:'#ffffff',
+                            inputBg:'#ffffffee', inputBorder:'#d9dbe1',
+                            sidebarBg:'#fffffff0', bubbleBorder:'#d9dbe1',
+                            accentPrimary:'#2563eb' } },
+  mosaic:     { bg:'#101114', fg:'#f1f2f4', panel:'#17191d', border:'#2d3037', red:'#4f8cff',
+                advanced: { brandColor:'#f1f2f4', sendBtnBg:'#4f8cff', sendBtnHover:'#3f7df0',
+                            userBubbleBg:'#202a3f', aiBubbleBg:'#17191d',
+                            inputBg:'#17191dcc', inputBorder:'#30343d',
+                            sidebarBg:'#15171bcc', bubbleBorder:'#30343d',
+                            accentPrimary:'#4f8cff' } },
   midnight:   { bg:'#0d1117', fg:'#c9d1d9', panel:'#161b22', border:'#30363d', red:'#f85149' },
   paper:      { bg:'#faf8f5', fg:'#3b3836', panel:'#ffffff', border:'#d5d0c8', red:'#c5ac4a' },
   // Spicy / fun themes
@@ -31,7 +42,7 @@ export const THEMES = {
   cute:       { bg:'#fff0f5', fg:'#d4608a', panel:'#fff8fa', border:'#f0c0d0', red:'#ff6b9d' },
 };
 
-const DEFAULT_THEME = 'dark';
+const DEFAULT_THEME = 'mosaic';
 const LS_KEY = 'odysseus-theme';
 const CUSTOM_THEMES_KEY = 'odysseus-custom-themes';
 
@@ -40,14 +51,15 @@ const FONT_MAP = {
   sans: "system-ui, -apple-system, 'Segoe UI', sans-serif",
   serif: "Georgia, 'Times New Roman', serif",
 };
-const DEFAULT_FONT = 'mono';
+const DEFAULT_FONT = 'sans';
 const DEFAULT_DENSITY = 'comfortable';
 const MAX_CUSTOM_THEMES = 8;
 
 // Default background patterns for built-in themes
 const THEME_DEFAULT_PATTERN = {
   dark:       'none',
-  light:      'dots',
+  light:      'none',
+  mosaic:     'none',
   midnight:   'rain',
   paper:      'dots',
   cyberpunk:  'synapse',
@@ -192,6 +204,7 @@ const ADV_KEYS = [
   { key: 'codeBg',             css: '--code-bg',           label: 'Code Bg',          group: 'Code Blocks' },
   { key: 'codeFg',             css: '--code-fg',           label: 'Code Text',        group: 'Code Blocks' },
   { key: 'toggleActive',       css: '--toggle-active',     label: 'Toggle On',        group: 'Controls' },
+  { key: 'accentPrimary',      css: '--accent-primary',    label: 'Accent',           group: 'Controls' },
 ];
 
 function computeAdvancedDefaults(colors) {
@@ -211,6 +224,7 @@ function computeAdvancedDefaults(colors) {
     codeBg: syn.bg,
     codeFg: syn.fg,
     toggleActive: red,
+    accentPrimary: red,
   };
 }
 
@@ -257,7 +271,10 @@ export function applyColors(colors) {
   s.setProperty('--fg', colors.fg);
   s.setProperty('--panel', colors.panel);
   s.setProperty('--border', colors.border);
-  if (colors.red) s.setProperty('--red', colors.red);
+  if (colors.red) {
+    s.setProperty('--red', colors.red);
+    s.setProperty('--accent', colors.red);
+  }
 
   // Keep the mobile browser toolbar / status bar matched to the theme bg
   // (same as the early head-script does on first paint).
@@ -283,6 +300,7 @@ export function applyColors(colors) {
   for (const { key, css } of ADV_KEYS) {
     s.setProperty(css, adv[key] || defaults[key]);
   }
+  s.setProperty('--accent', adv.accentPrimary || defaults.accentPrimary);
 
   // Update favicon to match theme accent color
   _updateFavicon(colors.red || '#e06c75');
@@ -630,7 +648,7 @@ export function initThemeUI() {
         <span style="background:${c.fg}"></span>
         <span style="background:${c.red}"></span>
       </div>
-      ${name === 'dark' ? 'original' : (name === 'gpt' ? 'GPT' : name)}
+      ${name === 'dark' ? 'original' : (name === 'gpt' ? 'GPT' : (name === 'mosaic' ? 'Mosaic' : name))}
     </div>
   `).join('');
 

@@ -17,11 +17,21 @@
 
 :root {
   /* Core palette */
-  --bg: #282c34;
-  --fg: #9cdef2;
-  --panel: #111;
-  --border: #355a66;
-  --red: #e06c75;
+  --bg: #101114;
+  --fg: #f1f2f4;
+  --panel: #17191d;
+  --border: #2d3037;
+  --red: #4f8cff;
+  --accent: #4f8cff;
+  --accent-primary: #4f8cff;
+  --accent-error: #e35d6a;
+  --surface-0: #101114;
+  --surface-1: #17191d;
+  --surface-2: #202329;
+  --surface-glass: color-mix(in srgb, var(--panel) 82%, transparent);
+  --text-muted: color-mix(in srgb, var(--fg) 62%, transparent);
+  --text-subtle: color-mix(in srgb, var(--fg) 42%, transparent);
+  --shadow-soft: 0 18px 60px rgba(0, 0, 0, 0.28);
   /* Were `var(--green)` / `var(--warn)` — self-referential, so they
      resolved to invalid and every site fell back to its own literal
      (or, for sites with no fallback, painted as transparent/inherit).
@@ -51,9 +61,9 @@
   --color-recording-hover: #d63031;
   --color-muted: #888;
   --color-muted-alt: #6b7280;
-  --color-accent: #00aaff;
-  --color-agent-active: #00ff00;
-  --color-brand-blue: #3b82f6;
+  --color-accent: var(--accent);
+  --color-agent-active: var(--accent);
+  --color-brand-blue: var(--accent);
   --color-blind-orange: #ff9800;
   --color-save-green: var(--color-success);
   --color-link-hover: #66c7ff;
@@ -69,10 +79,21 @@
 }
 
 :root.light {
-  --bg: #f5f5f5;
-  --fg: #2b2b2b;
-  --panel: #fff;
-  --border: #bbb;
+  --bg: #f7f7f8;
+  --fg: #17181b;
+  --panel: #ffffff;
+  --border: #d9dbe1;
+  --red: #2563eb;
+  --accent: #2563eb;
+  --accent-primary: #2563eb;
+  --accent-error: #c83f4c;
+  --surface-0: #f7f7f8;
+  --surface-1: #ffffff;
+  --surface-2: #eef0f4;
+  --surface-glass: color-mix(in srgb, var(--panel) 86%, transparent);
+  --text-muted: color-mix(in srgb, var(--fg) 64%, transparent);
+  --text-subtle: color-mix(in srgb, var(--fg) 44%, transparent);
+  --shadow-soft: 0 18px 50px rgba(25, 28, 35, 0.12);
   --hl-bg: #f9f9f9;
   --hl-fg: #2b2b2b;
   --hl-keyword: #7928a1;
@@ -95,14 +116,18 @@
 * { box-sizing: border-box; }
 html, body { overflow-x: hidden; height: 100%; margin: 0; overscroll-behavior: none; }
 body {
-  background-color: var(--bg);
+  background:
+    radial-gradient(circle at 50% -20%, color-mix(in srgb, var(--accent, var(--red)) 10%, transparent), transparent 34rem),
+    var(--bg);
   color: var(--fg);
   /* Animate the dock push BOTH ways. Keeping the transition on the base body
      (not on .right/left-dock-active) means removing the class on undock also
      animates padding back to 0 — otherwise the chat snapped back instantly. */
   transition: padding-left 160ms cubic-bezier(0.22, 0.61, 0.36, 1),
               padding-right 160ms cubic-bezier(0.22, 0.61, 0.36, 1);
-  font-family: var(--font-family, 'Fira Code', monospace);
+  font-family: var(--font-family, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif);
+  font-size: 14px;
+  letter-spacing: 0;
   display: flex;
   height: 100%;
   height: 100dvh; /* dynamic viewport height — adapts when mobile keyboard opens */
@@ -385,8 +410,8 @@ body.bg-pattern-sparkles {
     }
     .sidebar {
       width: 240px;
-      background: var(--sidebar-bg, var(--panel));
-      border-right: 1px solid var(--border);
+      background: var(--sidebar-bg, var(--surface-glass, var(--panel)));
+      border-right: 1px solid color-mix(in srgb, var(--fg) 9%, transparent);
       transition: width 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
       display: flex;
       flex-direction: column;
@@ -395,9 +420,11 @@ body.bg-pattern-sparkles {
       min-height: 0;
       margin: 0;
       padding: 0;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      backdrop-filter: blur(10px);
-      border: 1px solid color-mix(in srgb, var(--fg) 11%, transparent);
+      box-shadow: none;
+      backdrop-filter: blur(22px) saturate(150%);
+      -webkit-backdrop-filter: blur(22px) saturate(150%);
+      border: none;
+      border-right: 1px solid color-mix(in srgb, var(--fg) 9%, transparent);
       position: relative;
     }
     .sidebar-resize-handle {
@@ -445,7 +472,7 @@ body.bg-pattern-sparkles {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px 12px;
+      padding: 12px 12px 14px;
       flex-shrink: 0;
       gap: 4px;
       min-height: 48px;
@@ -459,8 +486,8 @@ body.bg-pattern-sparkles {
       min-width: 0;
       cursor: pointer;
       padding: 6px 8px;
-      border-radius: 8px;
-      transition: background 0.15s;
+      border-radius: 12px;
+      transition: background 0.16s ease, color 0.16s ease;
     }
 
     .user-bar-left:hover {
@@ -470,8 +497,8 @@ body.bg-pattern-sparkles {
     .user-bar-avatar {
       width: 24px;
       height: 24px;
-      border-radius: 50%;
-      background: color-mix(in srgb, var(--fg) 12%, transparent);
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--accent, var(--red)) 13%, var(--panel));
       display: flex;
       align-items: center;
       justify-content: center;
@@ -484,8 +511,8 @@ body.bg-pattern-sparkles {
     }
 
     .user-bar-name {
-      font-size: 9.75px;
-      font-weight: 500;
+      font-size: 12px;
+      font-weight: 600;
       color: var(--fg);
       opacity: 0.8;
       overflow: hidden;
@@ -529,14 +556,14 @@ body.bg-pattern-sparkles {
       align-items: center;
       justify-content: flex-end; /* right-align when sidebar is on left */
       gap: 8px;
-      padding: 15px 10px 0 40px; /* top padding aligns logo with fixed hamburger */
+      padding: 15px 12px 2px 42px; /* top padding aligns logo with fixed hamburger */
       flex-shrink: 0;
-      min-height: 40px;
+      min-height: 44px;
       border: none !important;
       box-shadow: none !important;
       position: relative;
       z-index: 3;
-      background: var(--sidebar-bg, var(--panel));
+      background: transparent;
     }
     .sidebar-hamburger {
       display: none !important; /* external #hamburger-btn is the only toggle */
@@ -549,8 +576,8 @@ body.bg-pattern-sparkles {
       scrollbar-width: none;
       display: flex;
       flex-direction: column;
-      gap: 0;
-      padding: 10px 8px 8px;
+      gap: 2px;
+      padding: 10px 10px 10px;
       min-height: 0;
       transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
     }
@@ -561,15 +588,16 @@ body.bg-pattern-sparkles {
       min-height: 24px;
     }
     .sidebar-brand-title {
-      font-size: 1rem;
+      font-size: 1.02rem;
       font-weight: 600;
       line-height: 1.35;
-      color: var(--brand-color, var(--red));
+      color: var(--fg);
       white-space: nowrap;
       user-select: none;
       position: relative;
       top: 0;
-      left: -10px;
+      left: -8px;
+      letter-spacing: -0.02em;
     }
     .sidebar-sep {
       display: none;
@@ -577,7 +605,7 @@ body.bg-pattern-sparkles {
     #sidebar-search-btn,
     #sidebar-new-chat-btn {
       margin: 0;
-      padding: 8px 8px;
+      padding: 10px 11px;
     }
     #sessions-section {
       margin-top: -1px;
@@ -586,7 +614,7 @@ body.bg-pattern-sparkles {
       margin-top: 1px;
     }
     #tools-section .list-item {
-      padding: 8px 8px;
+      padding: 10px 11px;
     }
     .sidebar.right-side .sidebar-header {
       justify-content: flex-start;
@@ -610,18 +638,18 @@ body.bg-pattern-sparkles {
       left: 9px;
       right: auto;
       z-index: 210;
-      width: 30px;
-      height: 30px;
+      width: 32px;
+      height: 32px;
       align-items: center;
       justify-content: center;
-      background: none;
-      border: none;
+      background: color-mix(in srgb, var(--panel) 68%, transparent);
+      border: 1px solid color-mix(in srgb, var(--fg) 9%, transparent);
       color: var(--hamburger-color, var(--fg));
       cursor: pointer;
-      opacity: 0.5;
+      opacity: 0.72;
       -webkit-tap-highlight-color: transparent;
       outline: none;
-      transition: opacity 0.15s;
+      transition: opacity 0.15s ease, background 0.15s ease, transform 0.15s ease;
       padding: 0;
       display: flex;
     }
@@ -634,6 +662,7 @@ body.bg-pattern-sparkles {
     }
     .hamburger-btn:hover {
       opacity: 1;
+      background: color-mix(in srgb, var(--fg) 8%, var(--panel));
     }
     /* Icon rail — mini sidebar that replaces the wide .sidebar when it's
        hidden (mutually exclusive — see sidebar-layout.js:57). Fullscreen
@@ -1134,13 +1163,13 @@ body.bg-pattern-sparkles {
     /* Section header row — identical sizing to .list-item */
     .section-header-flex {
       display: flex; align-items: center; gap: 6px;
-      padding: 8px 8px; margin: 1px 0; border-radius: 4px;
+      padding: 10px 11px; margin: 2px 0; border-radius: 10px;
       background: transparent; cursor: pointer;
-      transition: background 0.08s;
-      height: 29px;
+      transition: background 0.14s ease, color 0.14s ease;
+      height: 40px;
       box-sizing: border-box;
     }
-    .section-header-flex:hover { background: color-mix(in srgb, var(--red) 8%, transparent); }
+    .section-header-flex:hover { background: color-mix(in srgb, var(--fg) 7%, transparent); }
     .section-header-flex::after { content: none; }
     .section-header-flex h4::before { content: none; }
 
@@ -1150,20 +1179,22 @@ body.bg-pattern-sparkles {
       flex: 1; cursor: pointer; user-select: none;
       display: flex; align-items: center; gap: 6px;
       margin: 0; padding: 0; border: none;
-      font-size: 10px; font-weight: 400; font-family: inherit;
+      font-size: 15px; font-weight: 600; font-family: inherit;
       /* 1.3 (not 1) so Fira Code's tall glyph box isn't vertically clipped in
          Chromium/Edge — mirrors the .list-item fix. The title is flex-centred
          in a fixed-height (29px) header, so this adds headroom without reflow. */
       line-height: 1.3; letter-spacing: 0; text-transform: none;
-      color: var(--fg);
+      color: var(--text-muted, color-mix(in srgb, var(--fg) 62%, transparent));
     }
     .section-icon,
     .sidebar-action-icon {
       flex-shrink: 0;
-      stroke: var(--accent, var(--red));
+      width: 17px;
+      height: 17px;
+      stroke: currentColor;
       position: relative;
       left: -1px;
-      color: var(--accent, var(--red));
+      color: var(--text-subtle, color-mix(in srgb, var(--fg) 42%, transparent));
     }
     /* Shared notification dot for sidebar section titles. Single source of
        truth so chats / email / assistant / future-section dots all sit at
@@ -1332,8 +1363,8 @@ body.bg-pattern-sparkles {
     .row { display:flex; gap:6px; align-items:center; }
     .list-item:hover,
     .models-row:hover {
-      background: color-mix(in srgb, var(--red) 8%, transparent);
-      border-color: var(--red);
+      background: color-mix(in srgb, var(--fg) 7%, transparent);
+      border-color: color-mix(in srgb, var(--fg) 12%, transparent);
     }
     /* Disabled tool — dimmed to signal its feature is turned off globally */
     .list-item.tool-disabled {
@@ -1436,17 +1467,17 @@ body.bg-pattern-sparkles {
       opacity: 1;
     }
     .list-item.active-session {
-      background: color-mix(in srgb, var(--red) 10%, transparent);
-      border-color: var(--red);
-      border-left-color: var(--red);
+      background: color-mix(in srgb, var(--accent, var(--red)) 14%, transparent);
+      border-color: color-mix(in srgb, var(--accent, var(--red)) 26%, transparent);
+      border-left-color: color-mix(in srgb, var(--accent, var(--red)) 42%, transparent);
     }
     .list-item .provider-logo { opacity: 0.4 !important; }
     .list-item:has(.session-star.processing) .provider-logo { opacity: 1 !important; }
     .list-item.stream-complete .provider-logo { opacity: 1 !important; }
     .list-item.active {
-      background: color-mix(in srgb, var(--red) 10%, transparent);
-      border-color: var(--red);
-      border-left-color: var(--red);
+      background: color-mix(in srgb, var(--accent, var(--red)) 14%, transparent);
+      border-color: color-mix(in srgb, var(--accent, var(--red)) 26%, transparent);
+      border-left-color: color-mix(in srgb, var(--accent, var(--red)) 42%, transparent);
     }
     /* Only show the red focus ring for keyboard navigation (Tab). Mouse
        clicks shouldn't leave a sticky red outline on a sidebar item. */
@@ -1623,16 +1654,16 @@ body.bg-pattern-sparkles {
     .list-item,
     .models-row {
       display: flex;
-      gap: 6px;
+      gap: 10px;
       align-items: center;
-      padding: 3px 8px;
-      margin: 0;
-      border-radius: 4px;
+      padding: 10px 11px;
+      margin: 1px 0;
+      border-radius: 10px;
       border: none;
       line-height: 1.3;
-      font-size: 13px;
+      font-size: 15px;
       background: transparent;
-      transition: background 0.08s;
+      transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease;
       cursor: pointer;
       touch-action: pan-y;
     }
@@ -1661,7 +1692,7 @@ body.bg-pattern-sparkles {
       width: auto !important;
       min-width: 0 !important;
       padding: 0 5px !important;
-      border-radius: 4px;
+      border-radius: 8px;
       color: var(--fg);
       /* Always visible at rest. On hover (devices that have it) the + spins
          90° and "new" reveals to its right — neat expand affordance. */
@@ -1714,7 +1745,7 @@ body.bg-pattern-sparkles {
     }
     .list-item span {
       color: var(--fg);
-      font-size: 9.75px;
+      font-size: inherit;
     }
     .grow {
       flex: 1;
@@ -1723,23 +1754,24 @@ body.bg-pattern-sparkles {
       white-space: nowrap;
     }
     input, textarea, button, select {
-      background:var(--bg);
+      background:var(--surface-1, var(--bg));
       color:var(--fg);
-      border:1px solid var(--border);
+      border:1px solid color-mix(in srgb, var(--fg) 12%, transparent);
       font-family:inherit;
       padding:6.9px;
-      border-radius: 4px;
-      transition: background 0.08s, border-color 0.08s, color 0.08s, opacity 0.08s;
+      border-radius: 10px;
+      transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, opacity 0.16s ease, transform 0.12s ease;
     }
     input:hover, textarea:hover, button:hover, select:hover {
-      border-color: var(--fg);
-      background-color: var(--panel);
+      border-color: color-mix(in srgb, var(--fg) 22%, transparent);
+      background-color: var(--surface-2, var(--panel));
     }
+    button:active { transform: translateY(1px); }
     :root.light input,
     :root.light textarea,
     :root.light button,
     :root.light select {
-      background:#eaeaea;
+      background: var(--surface-1);
       color-scheme: light;
     }
     input[type="text"] { height:32px; width:100%; }
@@ -1766,12 +1798,12 @@ body.bg-pattern-sparkles {
       flex:1;
       display:flex;
       flex-direction:column;
-      padding:0 16px;
+      padding:0 clamp(12px, 2.2vw, 28px);
       overflow:hidden;
       position:relative;
       min-height:0;
       min-width:0;
-      margin-top:8px;
+      margin-top:0;
       margin-bottom: 0;
     }
     .chat-meta { font-size:12px; color:color-mix(in srgb, var(--fg) 60%, transparent); margin-bottom:6px; }
@@ -1783,7 +1815,7 @@ body.bg-pattern-sparkles {
       margin-bottom:8px;
       white-space:normal;
       min-height:0;
-      --chat-max: 800px;
+      --chat-max: 860px;
       padding-left: max(0px, calc((100% - var(--chat-max)) / 2));
       padding-right: max(12px, calc((100% - var(--chat-max)) / 2 + 12px));
     }
@@ -1851,13 +1883,10 @@ body.bg-pattern-sparkles {
       #welcome-screen .incognito-btn { margin-top: 6px; }
     }
     #welcome-screen .welcome-name {
-      font-size:2.2rem;
+      font-size: clamp(2rem, 4vw, 3.5rem);
       font-weight:700;
-      background: linear-gradient(135deg, var(--brand-color, var(--red)), color-mix(in srgb, var(--brand-color, var(--red)) 60%, var(--fg)));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      letter-spacing:0.03em;
+      color: var(--fg);
+      letter-spacing:-0.055em;
       margin-bottom:10px;
     }
     .welcome-boat {
@@ -1869,8 +1898,8 @@ body.bg-pattern-sparkles {
     }
     #welcome-screen .welcome-sub {
       font-size:0.85rem;
-      color:color-mix(in srgb, var(--fg) 60%, transparent);
-      opacity:0.6;
+      color:var(--text-muted, color-mix(in srgb, var(--fg) 60%, transparent));
+      opacity:1;
       line-height:1.5;
       max-width:300px;
     }
@@ -1883,8 +1912,8 @@ body.bg-pattern-sparkles {
     }
     #welcome-screen .welcome-tip {
       font-size:0.75rem;
-      color:var(--fg);
-      opacity:0.2;
+      color:var(--text-subtle, color-mix(in srgb, var(--fg) 42%, transparent));
+      opacity:1;
       margin-top:24px;
       max-width:320px;
       line-height:1.4;
@@ -1895,7 +1924,7 @@ body.bg-pattern-sparkles {
       background: none;
       border: 1px solid var(--border);
       color: var(--fg);
-      opacity: 0.25;
+      opacity: 0.58;
       cursor: pointer;
       padding: 6px 12px;
       border-radius: 20px;
@@ -1909,7 +1938,7 @@ body.bg-pattern-sparkles {
       font-size: 11px;
     }
     .incognito-btn:hover {
-      opacity: 0.6;
+      opacity: 0.86;
       background: color-mix(in srgb, var(--fg) 6%, transparent);
     }
     .incognito-btn.active {
@@ -1946,16 +1975,16 @@ body.bg-pattern-sparkles {
       }
     }
     .msg {
-      margin: 8px 0;
+      margin: 10px 0;
       position: relative;
       display: flex;
       flex-direction: column;
       width: fit-content;
       max-width: 85%;
       min-width: 80px;
-      border-radius: 12px;
-      padding: 10px 12px;
-      line-height: 1.4;
+      border-radius: 18px;
+      padding: 12px 14px;
+      line-height: 1.5;
       word-wrap: break-word;
       overflow-wrap: break-word;
       overflow: hidden;
@@ -1965,9 +1994,9 @@ body.bg-pattern-sparkles {
       align-items: flex-end;
       margin-left: auto;
       margin-right: 8px;
-      background: var(--user-bubble-bg, color-mix(in srgb, var(--fg) 8%, var(--bg)));
-      border: 1px solid var(--bubble-border, var(--border));
-      border-radius: 18px 18px 0 18px;
+      background: var(--user-bubble-bg, color-mix(in srgb, var(--accent, var(--red)) 16%, var(--panel)));
+      border: 1px solid var(--bubble-border, color-mix(in srgb, var(--accent, var(--red)) 18%, transparent));
+      border-radius: 20px;
       align-self: flex-end;
       width: fit-content;
       max-width: 85%;
@@ -1980,9 +2009,9 @@ body.bg-pattern-sparkles {
       align-items: flex-start;
       margin-right: auto;
       margin-left: 8px;
-      background: var(--ai-bubble-bg, var(--panel));
-      border: 1px solid var(--bubble-border, var(--border));
-      border-radius: 18px 18px 18px 0;
+      background: var(--ai-bubble-bg, color-mix(in srgb, var(--panel) 78%, var(--bg)));
+      border: 1px solid var(--bubble-border, color-mix(in srgb, var(--fg) 9%, transparent));
+      border-radius: 20px;
       align-self: flex-start;
       width: 85%;
       max-width: 85%;
@@ -1994,7 +2023,7 @@ body.bg-pattern-sparkles {
     }
     .msg .role {
       font-weight: 600;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
       display: flex;
       align-items: center;
       gap: 6px;
@@ -2003,18 +2032,13 @@ body.bg-pattern-sparkles {
       white-space: nowrap;
     }
     .msg .role::before {
-      content: '';
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--model-dot, color-mix(in srgb, var(--fg) 30%, transparent));
-      flex-shrink: 0;
+      content: none;
     }
     .msg .role.has-logo::before { display: none; }
     .role-provider-logo { display: inline-flex; align-items: center; flex-shrink: 0; }
     .role-provider-logo svg { width: 12px; height: 12px; }
     .msg-user .role {
-      color: color-mix(in srgb, var(--fg) 60%, transparent);
+      color: var(--text-muted, color-mix(in srgb, var(--fg) 60%, transparent));
     }
     .msg-user .role::before {
       background: color-mix(in srgb, var(--fg) 40%, transparent);
@@ -2124,8 +2148,8 @@ body.bg-pattern-sparkles {
     pre {
       overflow: hidden;
       padding: 6px 4px 2px 4px;
-      border: 1px solid var(--border);
-      background: var(--bg);
+      border: 1px solid color-mix(in srgb, var(--fg) 10%, transparent);
+      background: var(--code-bg, color-mix(in srgb, var(--bg) 80%, #000));
       position: relative;
       line-height: 1.4;
       font-size: 0.95em;
@@ -2135,7 +2159,7 @@ body.bg-pattern-sparkles {
       margin: 8px 0;
       white-space: pre-wrap;
       word-break: break-word;
-      border-radius: 4px;
+      border-radius: 12px;
       min-height: 20px;
       min-width: 80px;
     }
@@ -2160,14 +2184,14 @@ body.bg-pattern-sparkles {
 
     /* Unified chat input bar */
     .chat-input-bar {
-      background: var(--input-bg, var(--panel));
-      border: 1px solid var(--input-border, var(--border));
-      border-radius: 16px;
-      padding: 10px 12px;
+      background: var(--input-bg, var(--surface-glass, var(--panel)));
+      border: 1px solid var(--input-border, color-mix(in srgb, var(--fg) 12%, transparent));
+      border-radius: 24px;
+      padding: 12px 14px;
       display: flex;
       flex-direction: column;
       gap: 8px;
-      max-width: 800px;
+      max-width: 860px;
       margin-left: auto;
       margin-right: auto;
       width: 100%;
@@ -2215,7 +2239,7 @@ body.bg-pattern-sparkles {
       border: none;
       outline: none;
       resize: none;
-      font-size: 14px;
+      font-size: 15px;
       line-height: 1.5;
       color: var(--fg);
       min-height: 24px;
@@ -2225,7 +2249,7 @@ body.bg-pattern-sparkles {
       transition: height 0.12s ease-out;
     }
     .chat-input-bar textarea#message::placeholder {
-      color: color-mix(in srgb, var(--fg) 35%, transparent);
+      color: var(--text-subtle, color-mix(in srgb, var(--fg) 42%, transparent));
     }
     .chat-input-bottom {
       display: flex;
@@ -2288,7 +2312,7 @@ body.bg-pattern-sparkles {
       opacity: 0.5;
       cursor: pointer;
       padding: 6px;
-      border-radius: 8px;
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -2297,7 +2321,7 @@ body.bg-pattern-sparkles {
     }
     .input-icon-btn:hover {
       opacity: 0.8;
-      background: color-mix(in srgb, var(--accent) 8%, transparent);
+      background: color-mix(in srgb, var(--fg) 8%, transparent);
     }
     .input-icon-btn.active,
     .input-icon-btn.expanded {
@@ -2373,9 +2397,9 @@ body.bg-pattern-sparkles {
       background: var(--send-btn-bg, var(--red));
       color: #fff;
       border: none;
-      border-radius: 8px;
+      border-radius: 999px;
       min-width: 32px;
-      width: 32px;
+      width: 34px;
       height: 32px !important;
       padding: 0;
       cursor: pointer;
@@ -2446,7 +2470,7 @@ body.bg-pattern-sparkles {
       100%     { transform: rotate(360deg); }
     }
     .send-btn:hover {
-      background: var(--send-btn-hover, color-mix(in srgb, var(--red) 80%, white));
+      background: var(--send-btn-hover, color-mix(in srgb, var(--send-btn-bg, var(--red)) 82%, #0b0d11));
       color: #fff;
     }
     .send-btn.mic-mode,
@@ -2514,8 +2538,8 @@ body.bg-pattern-sparkles {
       display: flex;
       flex-shrink: 0;
       height: 28px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
+      border: 1px solid color-mix(in srgb, var(--fg) 11%, transparent);
+      border-radius: 999px;
       overflow: hidden;
       position: relative;
     }
@@ -2526,8 +2550,8 @@ body.bg-pattern-sparkles {
       left: 0;
       width: 50%;
       height: 100%;
-      background: color-mix(in srgb, var(--fg) 10%, transparent);
-      border-radius: 9px;
+      background: color-mix(in srgb, var(--fg) 12%, transparent);
+      border-radius: 999px;
       transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
       z-index: 0;
     }
@@ -3911,7 +3935,7 @@ body.bg-pattern-sparkles {
       flex:1; 
       display:flex; 
       align-items:center; 
-      font-size: 9.75px;
+      font-size: 15px;
     }
     .model-fav-btn {
       width: 8px; height: 8px;
@@ -4043,25 +4067,25 @@ body.bg-pattern-sparkles {
       }
       .section-header-flex h4,
       .section-header-flex .section-title {
-        font-size: 14px !important;
+        font-size: 15px !important;
         gap: 11px !important;
       }
       .section-icon,
       .sidebar-action-icon {
-        width: 16px !important;
-        height: 16px !important;
+        width: 18px !important;
+        height: 18px !important;
         left: 0 !important;
       }
       /* List items — bigger touch targets, bigger text */
       .list-item {
         padding: 12px 10px !important;
         min-height: 48px;
-        font-size: 14px;
+        font-size: 15px;
         border-radius: 8px;
         gap: 10px !important;
       }
       .list-item .grow {
-        font-size: 14px !important;
+        font-size: 15px !important;
       }
       /* Search, New Chat & Assistant */
       #sidebar-search-btn,
@@ -4073,7 +4097,7 @@ body.bg-pattern-sparkles {
       #sidebar-search-btn .grow,
       #sidebar-new-chat-btn .grow,
       .sidebar-assistant-entry .grow {
-        font-size: 14px !important;
+        font-size: 15px !important;
         left: 0 !important;
       }
       /* Section separator — more breathing room */
@@ -4845,22 +4869,22 @@ body.bg-pattern-sparkles {
       }
     }
     .modal-content {
-      background:var(--panel);
-      border:1px solid var(--border);
-      width:min(520px, 92vw); max-height:85vh; padding:10px;
+      background:var(--surface-1, var(--panel));
+      border:1px solid color-mix(in srgb, var(--fg) 11%, transparent);
+      width:min(520px, 92vw); max-height:85vh; padding:12px;
       box-sizing:border-box; font-size:14px;
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       letter-spacing: -0.015em;
       display:flex; flex-direction:column;
       position:relative;
       overflow-y:auto;
-      border-radius:10px;
-      box-shadow:0 8px 32px rgba(0,0,0,0.45);
+      border-radius:18px;
+      box-shadow:var(--shadow-soft);
       pointer-events:auto;
       animation: modal-enter 0.25s ease-out both;
     }
     .modal-header {
-      display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;
+      display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;
       cursor:grab; user-select:none;
       /* Pin the header (with its close button) to the top of the
          scrollable modal-content so users can always dismiss the modal
@@ -4913,14 +4937,14 @@ body.bg-pattern-sparkles {
       margin-right:auto;
       font-size:1rem;
       font-weight:600;
-      letter-spacing:-0.03em;
-      color:var(--red);
+      letter-spacing:-0.02em;
+      color:var(--fg);
     }
     .close-btn,
     .modal-close {
-      background:var(--bg);
+      background:color-mix(in srgb, var(--fg) 6%, transparent);
       color:var(--fg);
-      border:1px solid var(--fg);
+      border:1px solid color-mix(in srgb, var(--fg) 12%, transparent);
       font-size:12px;
       width:24px;
       height:24px;
@@ -4931,7 +4955,7 @@ body.bg-pattern-sparkles {
       line-height:1;
       text-indent:0;
       cursor:pointer;
-      border-radius:4px;
+      border-radius:8px;
       line-height:1;
       flex-shrink:0;
     }
@@ -6162,22 +6186,23 @@ pre { background: var(--code-bg, var(--hl-bg, #282c34)) !important; }
       gap: 6px; margin-bottom: 12px;
     }
     .theme-swatch {
-      border: 2px solid var(--border); border-radius: 8px; cursor: pointer;
+      border: 1px solid color-mix(in srgb, var(--fg) 12%, transparent); border-radius: 12px; cursor: pointer;
       padding: 5px; text-align: center; font-size: 0.65rem; color: var(--fg);
-      transition: border-color 0.15s, transform 0.15s;
+      background: color-mix(in srgb, var(--fg) 4%, transparent);
+      transition: border-color 0.15s, transform 0.15s, background 0.15s;
     }
-    .theme-swatch:hover { transform: scale(1.06); }
-    .theme-swatch.active { border-color: var(--red); box-shadow: 0 0 0 2px color-mix(in srgb, var(--red) 33%, transparent); }
+    .theme-swatch:hover { transform: translateY(-1px); background: color-mix(in srgb, var(--fg) 7%, transparent); }
+    .theme-swatch.active { border-color: var(--accent, var(--red)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, var(--red)) 18%, transparent); }
     .theme-swatch-colors {
       display: flex; justify-content: center; margin-bottom: 3px;
     }
     .theme-swatch-colors span {
-      width: 15px; height: 15px; border-radius: 50%;
+      width: 15px; height: 15px; border-radius: 999px;
       margin-left: -5px;
       border: 1.5px solid color-mix(in srgb, var(--fg) 12%, transparent);
     }
     .theme-swatch-colors span:first-child { margin-left: 0; }
-    .theme-custom-label { font-size: 11px; font-weight: 600; color: color-mix(in srgb, var(--fg) 50%, transparent); text-transform: uppercase; letter-spacing: 0.06em; margin: 10px 0 6px; }
+    .theme-custom-label { font-size: 11px; font-weight: 600; color: var(--text-muted, color-mix(in srgb, var(--fg) 62%, transparent)); letter-spacing: 0; margin: 10px 0 6px; }
     .theme-custom { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
     .color-row { display: flex; align-items: center; gap: 4px; }
     .color-row label { font-size: 13px; font-weight: 500; color: var(--fg); opacity: 0.7; flex: 1; }
@@ -35938,3 +35963,6 @@ body.theme-frosted .modal {
   padding: 10px 18px;
   border-top: 1px solid var(--border);
 }
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(18px) saturate(150%);
+      -webkit-backdrop-filter: blur(18px) saturate(150%);

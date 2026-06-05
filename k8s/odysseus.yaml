@@ -95,15 +95,21 @@ data:
 
     outgoing:
       request_timeout: 10.0
+      # The cluster intercepts outbound HTTPS with a self-signed CA that the
+      # container doesn't trust. Disable verification so engines can reach
+      # external search APIs (wikidata, brave, etc).
+      verify: false
 
-    # Disable engines that fail on init due to missing external/network
-    # dependencies not available in this cluster.
+    # Disable engines that fail on init regardless of SSL — either they need
+    # external network deps unavailable here, or they hit SearXNG cache bugs.
     engines:
       - name: radio browser
         disabled: true
       - name: ahmia
         disabled: true
       - name: torch
+        disabled: true
+      - name: wikidata
         disabled: true
 
     # Disable the tracker URL remover plugin — it fetches ClearURLs rule lists
@@ -208,9 +214,10 @@ spec:
           args:
             - |
               set -eu
-              if [ ! -s /etc/searxng/settings.yml ]; then
-                cp /tmp/searxng-settings.yml /etc/searxng/settings.yml
-              fi
+              # Always overwrite — settings come from the ConfigMap (source of
+              # truth). The PVC only persists state that SearXNG writes itself
+              # (cache DBs etc); config must not be left stale from prior versions.
+              cp /tmp/searxng-settings.yml /etc/searxng/settings.yml
               # Remove stale SQLite cache DBs from the PVC. SearXNG 2026.5.x
               # introduced a new schema (properties table) that old DB files
               # from previous versions don't have, causing radio_browser and

@@ -95,6 +95,35 @@ data:
 
     outgoing:
       request_timeout: 10.0
+      # The cluster intercepts outbound HTTPS with a self-signed CA that the
+      # container doesn't trust. Disable verification so engines can reach
+      # external search APIs (wikidata, brave, etc).
+      verify: false
+
+    engines:
+      # Tor-only engines — require a Tor daemon in the cluster. Not fixable
+      # by SSL settings; genuinely unavailable here.
+      - name: ahmia
+        disabled: true
+      - name: torch
+        disabled: true
+      # SearXNG 2026.5.x bug: radio_browser calls into ENGINES_CACHE during
+      # init() before the properties table is created in the SQLite DB, causing
+      # "no such table: properties". All other engines that use the cache do so
+      # lazily at search time (after the DB is ready). Can re-enable once
+      # SearXNG fixes the init-time cache access ordering.
+      - name: radio browser
+        disabled: true
+      # Wikidata's SPARQL init query returns 404 via the cluster's transparent
+      # proxy — the proxy doesn't forward query.wikidata.org/sparql. SSL is
+      # fine (outgoing.verify: false passes the cert check); the 404 is a
+      # proxy policy issue, not something SearXNG config can fix.
+      - name: wikidata
+        disabled: true
+
+  # Empty limiter config to suppress "missing config file" log noise.
+  # The limiter itself is disabled via server.limiter: false above.
+  limiter.toml: ""
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -187,9 +216,28 @@ spec:
           args:
             - |
               set -eu
-              if [ ! -s /etc/searxng/settings.yml ]; then
-                cp /tmp/searxng-settings.yml /etc/searxng/settings.yml
+              # Auto-discover any intercepting HTTPS proxy and trust its CA.
+              # openssl s_client fetches the presented cert without verifying
+              # trust — we then add it to the OS bundle so update-ca-certificates
+              # (run by the entrypoint) picks it up before SearXNG starts.
+              # This fixes early-startup fetches (ClearURLs data, etc.) that
+              # bypass outgoing.verify and use the raw OS trust store instead.
+              if command -v openssl >/dev/null 2>&1; then
+                mkdir -p /usr/local/share/ca-certificates
+                openssl s_client -connect raw.githubusercontent.com:443 \
+                  -servername raw.githubusercontent.com </dev/null 2>/dev/null \
+                  | openssl x509 \
+                  > /usr/local/share/ca-certificates/cluster-proxy-ca.crt 2>/dev/null \
+                  || true
               fi
+              # Always overwrite — settings come from the ConfigMap (source of
+              # truth). The PVC only persists state that SearXNG writes itself
+              # (cache DBs etc); config must not be left stale from prior versions.
+              cp /tmp/searxng-settings.yml /etc/searxng/settings.yml
+              # Remove stale SQLite cache DBs. SearXNG 2026.5.x introduced a
+              # new schema (properties table) that old PVC-persisted DB files
+              # from prior versions lack. Cache-only — safe to delete each start.
+              rm -f /etc/searxng/*.db
               exec /usr/local/searxng/entrypoint.sh
           ports:
             - containerPort: 8080
@@ -212,6 +260,10 @@ spec:
             - name: settings
               mountPath: /tmp/searxng-settings.yml
               subPath: settings.yml
+              readOnly: true
+            - name: settings
+              mountPath: /etc/searxng/limiter.toml
+              subPath: limiter.toml
               readOnly: true
       volumes:
         - name: data

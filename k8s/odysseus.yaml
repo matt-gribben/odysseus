@@ -114,6 +114,12 @@ data:
       # SearXNG fixes the init-time cache access ordering.
       - name: radio browser
         disabled: true
+      # Wikidata's SPARQL init query returns 404 via the cluster's transparent
+      # proxy — the proxy doesn't forward query.wikidata.org/sparql. SSL is
+      # fine (outgoing.verify: false passes the cert check); the 404 is a
+      # proxy policy issue, not something SearXNG config can fix.
+      - name: wikidata
+        disabled: true
 
   # Empty limiter config to suppress "missing config file" log noise.
   # The limiter itself is disabled via server.limiter: false above.
@@ -217,6 +223,7 @@ spec:
               # This fixes early-startup fetches (ClearURLs data, etc.) that
               # bypass outgoing.verify and use the raw OS trust store instead.
               if command -v openssl >/dev/null 2>&1; then
+                mkdir -p /usr/local/share/ca-certificates
                 openssl s_client -connect raw.githubusercontent.com:443 \
                   -servername raw.githubusercontent.com </dev/null 2>/dev/null \
                   | openssl x509 \

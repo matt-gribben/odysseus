@@ -100,24 +100,20 @@ data:
       # external search APIs (wikidata, brave, etc).
       verify: false
 
-    # Disable engines that fail on init regardless of SSL — either they need
-    # external network deps unavailable here, or they hit SearXNG cache bugs.
     engines:
-      - name: radio browser
-        disabled: true
+      # Tor-only engines — require a Tor daemon in the cluster. Not fixable
+      # by SSL settings; genuinely unavailable here.
       - name: ahmia
         disabled: true
       - name: torch
         disabled: true
-      - name: wikidata
+      # SearXNG 2026.5.x bug: radio_browser calls into ENGINES_CACHE during
+      # init() before the properties table is created in the SQLite DB, causing
+      # "no such table: properties". All other engines that use the cache do so
+      # lazily at search time (after the DB is ready). Can re-enable once
+      # SearXNG fixes the init-time cache access ordering.
+      - name: radio browser
         disabled: true
-
-    # Disable the tracker URL remover plugin — it fetches ClearURLs rule lists
-    # from external URLs that are unreachable in this cluster, causing loud
-    # HTTPError warnings on every startup.
-    plugins:
-      - id: tracker_url_remover
-        active: false
 
   # Empty limiter config to suppress "missing config file" log noise.
   # The limiter itself is disabled via server.limiter: false above.

@@ -197,6 +197,12 @@ spec:
         app: searxng
     spec:
       enableServiceLinks: false
+      dnsConfig:
+        options:
+          # Public search engine hostnames have multiple labels; avoid trying
+          # cluster search-domain suffixes before the absolute lookup.
+          - name: ndots
+            value: "1"
       nodeSelector:
         kubernetes.io/hostname: hypabolic-macpro6-1
       tolerations:
@@ -244,7 +250,7 @@ spec:
               name: http
           env:
             - name: SEARXNG_BASE_URL
-              value: http://searxng:8080/
+              value: http://search.homelab/
           securityContext:
             capabilities:
               drop:
@@ -285,6 +291,25 @@ spec:
     - name: http
       port: 8080
       targetPort: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: searxng
+  namespace: odysseus
+spec:
+  ingressClassName: public
+  rules:
+    - host: search.homelab
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: searxng
+                port:
+                  number: 8080
 ---
 apiVersion: apps/v1
 kind: Deployment

@@ -210,15 +210,26 @@ spec:
           args:
             - |
               set -eu
+              # Auto-discover any intercepting HTTPS proxy and trust its CA.
+              # openssl s_client fetches the presented cert without verifying
+              # trust — we then add it to the OS bundle so update-ca-certificates
+              # (run by the entrypoint) picks it up before SearXNG starts.
+              # This fixes early-startup fetches (ClearURLs data, etc.) that
+              # bypass outgoing.verify and use the raw OS trust store instead.
+              if command -v openssl >/dev/null 2>&1; then
+                openssl s_client -connect raw.githubusercontent.com:443 \
+                  -servername raw.githubusercontent.com </dev/null 2>/dev/null \
+                  | openssl x509 \
+                  > /usr/local/share/ca-certificates/cluster-proxy-ca.crt 2>/dev/null \
+                  || true
+              fi
               # Always overwrite — settings come from the ConfigMap (source of
               # truth). The PVC only persists state that SearXNG writes itself
               # (cache DBs etc); config must not be left stale from prior versions.
               cp /tmp/searxng-settings.yml /etc/searxng/settings.yml
-              # Remove stale SQLite cache DBs from the PVC. SearXNG 2026.5.x
-              # introduced a new schema (properties table) that old DB files
-              # from previous versions don't have, causing radio_browser and
-              # other engines to fail on init with "no such table: properties".
-              # These files are caches only — safe to delete on every start.
+              # Remove stale SQLite cache DBs. SearXNG 2026.5.x introduced a
+              # new schema (properties table) that old PVC-persisted DB files
+              # from prior versions lack. Cache-only — safe to delete each start.
               rm -f /etc/searxng/*.db
               exec /usr/local/searxng/entrypoint.sh
           ports:

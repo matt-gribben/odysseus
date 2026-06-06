@@ -2246,7 +2246,7 @@ async function _cmdDemo(args, ctx) {
       before() { if (sidebar?.classList.contains('hidden')) sidebar.classList.remove('hidden'); } },
     { sel: '#model-picker-btn',   text: 'Pick your LLM, Local or API.', advanceOnClick: true },
     { sel: '#mode-agent-btn',     text: '<b>Agent mode</b> gives Odysseus more control of the app when your model supports tools: create a theme, download a model, make a daily task, organize things, and more.', mode: 'click' },
-    { sel: '#web-toggle-btn',     text: 'Toggle tools like <b>web search</b>. Odysseus comes with private built-in <b>SearXNG</b> search.', mode: 'click' },
+    { sel: '#search-mode-btn',    text: 'Pick a <b>search mode</b>: web <b>Search</b> (private built-in <b>SearXNG</b>) or <b>Deep research</b>.', mode: 'click' },
     { sel: '#overflow-plus-btn',  text: 'More tools can be found here, or in your sidebar. <b>Click to peek.</b>',
       advanceOnClick: true, pulseNext: true, afterDelay: 2200 },
     { sel: '#message',            text: 'Write your prompt here. Drag and drop files to attach them. <b>/prompt</b> for random prompt, <b>/help</b> for more.',
@@ -5698,9 +5698,33 @@ const COMMANDS = {
   research: {
     alias: [],
     category: 'Tools',
-    help: 'Open Deep Research',
-    handler: (args, ctx) => _cmdToolPanel('research', args, ctx),
-    usage: '/research'
+    help: 'Run deep research (or open panel)',
+    handler: (args, ctx) => {
+      const query = (args || []).join(' ').trim();
+      if (!query) {
+        // No query: open panel (unchanged behavior)
+        return _cmdToolPanel('research', args, ctx);
+      }
+      // Query provided: run research from chat
+      const msgEl = document.getElementById('message');
+      if (msgEl) {
+        msgEl.value = query;
+        // Arm Deep Research mode. Prefer the new search-mode hook; fall back to the existing toggle helper.
+        if (window.searchMode && typeof window.searchMode.setMode === 'function') {
+          window.searchMode.setMode('research');
+        } else {
+          _applyToggle('research', 'on');
+        }
+        const form = document.getElementById('chat-form');
+        if (form && typeof form.requestSubmit === 'function') {
+          form.requestSubmit();
+        } else if (form) {
+          form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        }
+      }
+      return true;
+    },
+    usage: '/research [query]'
   },
   compare: {
     alias: [],

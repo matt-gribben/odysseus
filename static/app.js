@@ -40,6 +40,7 @@ import themeModule from './js/theme.js';
 import cookbookModule from './js/cookbook.js';
 import groupModule from './js/group.js';
 import * as researchPanelModule from './js/research/panel.js';
+import searchModeModule from './js/searchMode.js';
 import ttsModule from './js/tts-ai.js';
 import spinnerModule from './js/spinner.js';
 import { initKeyboardShortcuts } from './js/keyboard-shortcuts.js';
@@ -711,6 +712,9 @@ function initializeEventListeners() {
     }
     const s = loadToggleState(); s.research = active; saveToggleState(s);
     updatePlusDot();
+    // Keep the composer search-mode dropdown (the single mode indicator) in sync
+    // no matter how research was toggled (dropdown, /toggle, sidebar, overflow).
+    if (window.searchMode && window.searchMode.refresh) window.searchMode.refresh();
     document.dispatchEvent(new CustomEvent('overflow-state-change'));
   }
 
@@ -1134,6 +1138,15 @@ function initializeEventListeners() {
     .then(d => {
       window._isAdmin = !!d.is_admin;
       if (d.is_admin && userBarAdmin) userBarAdmin.style.display = '';
+      // Cookbook is admin-only — hide its rail button, sidebar entry, and the
+      // Appearance visibility toggle row so non-admins can't see or re-enable it.
+      if (!d.is_admin) {
+        ['rail-cookbook', 'tool-cookbook-btn'].forEach(id => {
+          const e = el(id); if (e) e.style.display = 'none';
+        });
+        const cbToggle = document.querySelector('.vis-row input[data-ui-key="tool-cookbook"]');
+        if (cbToggle) cbToggle.closest('.vis-row')?.style.setProperty('display', 'none');
+      }
       const userBarName = el('user-bar-name');
       const userBarAvatar = el('user-bar-avatar');
       if (userBarName && d.username) {
@@ -1563,6 +1576,9 @@ function initializeEventListeners() {
     const state = loadToggleState();
     const key = _modeKey(stateKey, mode);
     if (Object.prototype.hasOwnProperty.call(state, key)) return !!state[key];
+    // Web search is the default ON state for the composer (Search mode). Other
+    // tools default ON only in agent mode.
+    if (stateKey === 'web') return true;
     return mode === 'agent'; // default: ON in agent, OFF in chat
   }
 
@@ -1688,6 +1704,7 @@ function initializeEventListeners() {
   }
   setupToggle('web-toggle-btn', 'web-toggle', 'web');
   setupToggle('bash-toggle-btn', 'bash-toggle', 'bash');
+  try { searchModeModule.init(); } catch (_) {}
   try { workspaceModule.initWorkspace(); } catch (_) {}
 
   // Document editor toggle (special: uses module panel, not a checkbox)

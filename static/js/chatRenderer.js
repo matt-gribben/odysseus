@@ -916,6 +916,12 @@ function _appendContinuePrompt(container) {
 function _appendReportButton(container, sessionId) {
   var apiBase = window.API_BASE || '';
 
+  // Append research complete line
+  var completeLine = document.createElement('div');
+  completeLine.className = 'research-complete-line';
+  completeLine.innerHTML = '✓ Research complete';
+  container.appendChild(completeLine);
+
   // Wrapper holds report button + chat-about button
   var wrap = document.createElement('div');
   wrap.className = 'report-btn-wrap';

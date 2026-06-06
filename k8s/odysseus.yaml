@@ -326,6 +326,12 @@ spec:
       labels:
         app: ntfy
     spec:
+      dnsConfig:
+        options:
+          # Public search engine hostnames have multiple labels; avoid trying
+          # cluster search-domain suffixes before the absolute lookup.
+          - name: ndots
+            value: "1"
       enableServiceLinks: false
       nodeSelector:
         kubernetes.io/hostname: hypabolic-macpro6-1
@@ -395,6 +401,15 @@ spec:
         app: odysseus
     spec:
       enableServiceLinks: false
+      dnsConfig:
+        options:
+          # External provider hostnames such as chatgpt.com and openai.com
+          # have fewer than Kubernetes' default ndots:5, which makes DNS try
+          # homelab search-domain names first. The homelab wildcard resolves
+          # those to the local ingress, presenting its fake default TLS cert.
+          # Resolve dotted external names absolutely before search suffixes.
+          - name: ndots
+            value: "1"
       imagePullSecrets:
         - name: harbor-robot
       nodeSelector:

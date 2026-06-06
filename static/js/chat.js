@@ -56,6 +56,10 @@ import createResearchSynapse from './researchSynapse.js';
   let _researchTimerEl = null, _researchTimerInterval = null;
   let _researchStartTime = 0, _researchAvgDuration = null;
   let _researchSynapse = null;
+  let _researchCardEl = null;
+  // Intent auto-detection state
+  let _researchAutoArmed = false;
+  let _researchManualOverride = false;
   function _clearResearchTimer() {
     if (_researchTimerInterval) { clearInterval(_researchTimerInterval); _researchTimerInterval = null; }
     if (_researchTimerEl) { _researchTimerEl.remove(); _researchTimerEl = null; }
@@ -67,6 +71,7 @@ import createResearchSynapse from './researchSynapse.js';
       _researchSynapse = null;
       setTimeout(() => { try { s.destroy(); } catch {} }, 800);
     }
+    if (_researchCardEl) { _researchCardEl.remove(); _researchCardEl = null; }
     _researchStartTime = 0;
     _researchAvgDuration = null;
   }
@@ -203,10 +208,84 @@ import createResearchSynapse from './researchSynapse.js';
     _refreshReasoningEffortUI();
   }
 
+  /**
+   * Classify whether a message expresses a deep-research intent. Matches intent
+   * phrases ANYWHERE in the sentence (not just the start) plus "research" used as
+   * an action verb, while staying clear of ordinary questions like
+   * "what is research?" or "tell me about X".
+   */
+  function _looksLikeResearch(msg) {
+    if (!msg || typeof msg !== 'string') return false;
+    const t = msg.trim().toLowerCase();
+    if (t.length < 6) return false;
+    // Unambiguous research-intent phrases, anywhere in the message.
+    const strong = [
+      /\bdeep\s+dive\b/,
+      /\bdeep(er)?\s+research\b/,
+      /\bin[-\s]?depth\s+(research|analysis|report|look|study|overview|breakdown)\b/,
+      /\bcomprehensive\s+(research|report|overview|analysis|study|guide|breakdown)\b/,
+      /\bthorough\s+(research|analysis|report|investigation|overview|breakdown)\b/,
+      /\bfind\s+out\s+everything\b/,
+      /\b(latest|current|recent)\s+(research|developments?|news)\s+on\b/,
+      /\bwhat'?s\s+the\s+latest\s+on\b/,
+      /\bcompare\s+.+\s+(vs\.?|versus)\s+.+/,
+    ];
+    for (const re of strong) if (re.test(t)) return true;
+    // "research" used as an action verb directed at the assistant.
+    const verby = [
+      /^research\b/,
+      /\b(do|please|can\s+you|could\s+you|would\s+you|help\s+me|let'?s|lets|i\s+want(?:\s+to)?|i'?d\s+like(?:\s+to)?|i\s+need(?:\s+to)?|going\s+to|gonna|wanna)\s+(?:to\s+|a\s+|some\s+|deep[-\s]|deeper\s+)*research\b/,
+      /\bresearch\s+(the|this|that|how|why|whether|into|on|about|topic|subject|impact|history|state)\b/,
+    ];
+    for (const re of verby) if (re.test(t)) return true;
+    return false;
+  }
+
+  /** Wire debounced intent auto-detection on the composer textarea. */
+  function _setupResearchIntentDetection() {
+    try {
+      const ta = document.getElementById('message');
+      if (!ta) return;
+      let _intentTimer = null;
+      ta.addEventListener('input', () => {
+        if (_intentTimer) clearTimeout(_intentTimer);
+        _intentTimer = setTimeout(() => {
+          try {
+            const val = ta.value || '';
+            if (!val.trim()) {
+              // Textarea cleared — reset flags
+              _researchAutoArmed = false;
+              _researchManualOverride = false;
+              return;
+            }
+            if (_researchManualOverride) return;
+            if (_researchAutoArmed && window.searchMode && window.searchMode.getMode() !== 'research') {
+              // User manually moved mode back — honour it
+              _researchManualOverride = true;
+              return;
+            }
+            // Fire regardless of chat/agent mode or current Search state —
+            // detecting research intent always selects Deep research.
+            if (_looksLikeResearch(val)) {
+              if (!window.searchMode) {
+                console.debug('[research-intent] matched but window.searchMode missing:', val);
+              } else if (window.searchMode.getMode() !== 'research') {
+                console.debug('[research-intent] auto-selecting Deep research for:', val);
+                window.searchMode.setMode('research');
+                _researchAutoArmed = true;
+              }
+            }
+          } catch (e) { /* best-effort */ }
+        }, 300);
+      });
+    } catch (e) { /* best-effort */ }
+  }
+
   export function init(apiBase) {
     API_BASE = apiBase;
     initSlashCommands({ apiBase, isStreaming: () => isStreaming });
     _setupReasoningEffort();
+    _setupResearchIntentDetection();
     // Initialize email inbox
     emailInbox.init(documentModule);
     // Wire the slash-command autocomplete popup on the chat composer. The
@@ -808,6 +887,18 @@ import createResearchSynapse from './researchSynapse.js';
       if (!isAgentMode && documentModule && documentModule.isPanelOpen() && documentModule.getCurrentDocId()) {
         isAgentMode = true;
       }
+      // Auto-arm Deep Research whenever the prompt clearly wants it — regardless
+      // of chat/agent mode or the current Search state. Research always runs in
+      // chat mode, so we normalize isAgentMode off here. Honours an explicit
+      // manual override and an already-armed toggle.
+      try {
+        if (!_researchManualOverride && !el('research-toggle').checked && _looksLikeResearch(msg)) {
+          if (window.searchMode && window.searchMode.setMode) window.searchMode.setMode('research');
+          else el('research-toggle').checked = true;
+          _researchAutoArmed = true;
+          isAgentMode = false; // research forces chat mode
+        }
+      } catch (_e) { /* best-effort */ }
       fd.append('mode', isAgentMode ? 'agent' : 'chat');
       if (el('web-toggle').checked) {
         if (isAgentMode) {
@@ -1718,14 +1809,33 @@ import createResearchSynapse from './researchSynapse.js';
                 var _rSid = sessionModule && sessionModule.getCurrentSessionId();
                 if (_rSid && sessionModule.markResearching) sessionModule.markResearching(_rSid);
                 const rp = json.data;
-                // Start research timer + synapse on first progress event
+                // Start research card + timer + synapse on first progress event
                 if (!_researchTimerEl && spinner && spinner.element) {
                   _researchStartTime = rp.started_at ? rp.started_at * 1000 : Date.now();
                   _researchAvgDuration = rp.avg_duration || null;
+                  // Build the research card container
+                  _researchCardEl = document.createElement('div');
+                  _researchCardEl.className = 'research-chat-card';
+                  // Card header: status label + cancel button
+                  const _cardHeader = document.createElement('div');
+                  _cardHeader.className = 'research-chat-card-header';
+                  const _cardLabel = document.createElement('span');
+                  _cardLabel.textContent = '🔍 Researching…';
+                  const _cardCancel = document.createElement('button');
+                  _cardCancel.className = 'research-chat-card-cancel';
+                  _cardCancel.textContent = 'Cancel';
+                  _cardCancel.addEventListener('click', () => {
+                    try { abortCurrentRequest(true); } catch (e) { console.warn('research cancel failed', e); }
+                  });
+                  _cardHeader.appendChild(_cardLabel);
+                  _cardHeader.appendChild(_cardCancel);
+                  _researchCardEl.appendChild(_cardHeader);
+                  // Insert card after spinner
+                  spinner.element.parentNode.insertBefore(_researchCardEl, spinner.element.nextSibling);
+                  // Timer element inside the card
                   _researchTimerEl = document.createElement('div');
                   _researchTimerEl.className = 'research-timer';
-                  // Styles in .research-timer CSS class
-                  spinner.element.parentNode.insertBefore(_researchTimerEl, spinner.element.nextSibling);
+                  _researchCardEl.appendChild(_researchTimerEl);
                   _researchTimerInterval = setInterval(() => {
                     if (!_researchTimerEl) return;
                     var elapsed = Math.floor((Date.now() - _researchStartTime) / 1000);
@@ -1739,17 +1849,13 @@ import createResearchSynapse from './researchSynapse.js';
                     }
                     _researchTimerEl.textContent = txt;
                   }, 1000);
-                  // Synapse visualization — insert right above the timer so
-                  // it sits between the spinner message and the timer line.
+                  // Synapse visualization — mounted inside the card
                   try {
-                    _researchSynapse = createResearchSynapse(spinner.element.parentNode, {
+                    _researchSynapse = createResearchSynapse(_researchCardEl, {
                       query: holder._researchQuery || rp.query || '',
                       startedAt: _researchStartTime,
+                      compact: true,
                     });
-                    // Move it to live between spinner and timer
-                    if (_researchSynapse.element && _researchTimerEl) {
-                      spinner.element.parentNode.insertBefore(_researchSynapse.element, _researchTimerEl);
-                    }
                   } catch (e) { console.warn('synapse init failed', e); }
                 }
                 if (_researchSynapse) {

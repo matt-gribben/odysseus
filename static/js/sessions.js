@@ -1385,6 +1385,12 @@ export async function loadSessions() {
       }
     }
     const hasPendingChat = !!_pendingChat;
+    // First visit in a new browser session (new tab / cold open). sessionStorage
+    // is per-tab and cleared on close, so this is true only until we set it below.
+    // On a same-tab refresh the flag persists and the user's last chat is restored
+    // normally. On a fresh open we skip the savedId / most-recent fallbacks so the
+    // app lands on the welcome screen (or the default-model composer) instead.
+    const _isFirstLoad = !sessionStorage.getItem('ody-session-active');
     let targetId = null;
     if (hasPendingChat) {
       // A model was picked and the UI is showing a fresh New Chat, but the
@@ -1399,29 +1405,25 @@ export async function loadSessions() {
     } else if (currentSessionId) {
       // Session was just created but may not be in the list yet — keep it
       targetId = currentSessionId;
-    } else if (savedId && activeSessions.some(s => s.id === savedId)) {
+    } else if (!_isFirstLoad && savedId && activeSessions.some(s => s.id === savedId)) {
       targetId = savedId;
-    } else if (!_skipAutoSelect && _realSessions.length > 0) {
+    } else if (!_isFirstLoad && !_skipAutoSelect && _realSessions.length > 0) {
       // Most-recent NON-transient session — skip Assistant / Tasks so the
       // auto-firing assistant doesn't become the apparent default chat.
       targetId = _realSessions[0].id;
-    } else if (!_skipAutoSelect && activeSessions.length > 0) {
+    } else if (!_isFirstLoad && !_skipAutoSelect && activeSessions.length > 0) {
       // Only transient sessions exist (brand-new account) — fall through to
       // the original behaviour so we don't leave the user with nothing.
       targetId = activeSessions[0].id;
     }
     _skipAutoSelect = false;
 
-    // Fresh login: prefer a default-model session so a brand-new user lands
-    // ready to chat. CRITICAL: only do this when there's NO session to return
-    // to (no hash / lastSessionId / existing chat resolved into targetId).
-    // Otherwise a fresh page load — which a server restart triggers — would
-    // spin up a new empty default-model chat and shadow the user's last
-    // conversation, making it look like the chat "lost its context" (and the
-    // picker would still show the old model's name from cached state). See
-    // the targetId resolution above (hash → currentSession → lastSessionId →
-    // most-recent).
-    const _isFirstLoad = !sessionStorage.getItem('ody-session-active');
+    // Fresh open: prefer a default-model session so the user lands ready to
+    // chat. CRITICAL: only do this when there's NO session to return to (no
+    // hash / currentSession resolved into targetId). The savedId /
+    // most-recent fallbacks are guarded by !_isFirstLoad above, so on a
+    // first load targetId is null here unless a hash or in-progress session
+    // was present.
     if (_isFirstLoad) {
       sessionStorage.setItem('ody-session-active', '1');
       if (!targetId) {

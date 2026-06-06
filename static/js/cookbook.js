@@ -1843,6 +1843,9 @@ if (typeof window !== 'undefined' && !window._cookbookServeEscBound) {
 }
 
 export async function open(opts) {
+  // Cookbook is admin-only. Fail closed: if the admin flag isn't set yet
+  // (auth status still loading) or the user isn't an admin, do nothing.
+  if (!window._isAdmin) return;
   const modal = document.getElementById('cookbook-modal');
   if (!modal) return;
   // Run any post-open intent (switch tab, prefill search, etc) after the

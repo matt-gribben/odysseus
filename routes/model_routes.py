@@ -1039,13 +1039,21 @@ def setup_model_routes(model_discovery):
         for ep in endpoints:
             base = _normalize_base(ep.base_url)
             provider = _detect_provider(base)
-            # Merge cached + pinned models, then filter out hidden ones
+            # Merge cached + pinned models, then filter out hidden ones.
+            # For Codex endpoints the "probe" is just returning CODEX_MODELS
+            # (no HTTP call), so always use the current list to avoid serving
+            # stale cached_models when new models are added.
             ep_model_type = getattr(ep, "model_type", None) or "llm"
-            model_ids = _visible_models(
-                _cached_model_ids(ep),
-                ep.hidden_models,
-                getattr(ep, "pinned_models", None),
-            )
+            if provider == "openai_codex":
+                from src.openai_codex import CODEX_MODELS as _CODEX_MODELS
+                _live = list(_CODEX_MODELS)
+                model_ids = _visible_models(_live, ep.hidden_models, _live)
+            else:
+                model_ids = _visible_models(
+                    _cached_model_ids(ep),
+                    ep.hidden_models,
+                    getattr(ep, "pinned_models", None),
+                )
             # Build correct URL based on provider
             chat_url = build_chat_url(base)
             kind = _effective_endpoint_kind(ep, base)

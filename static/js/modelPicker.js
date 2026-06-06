@@ -186,9 +186,11 @@ function _initModelPickerDropdown() {
       const probeResult = item.endpoint_id ? _localProbe[item.endpoint_id] : null;
       const isLocalDead = !!(probeResult && probeResult.alive === false);
       allModels.forEach((mid, i) => {
-        // Deduplicate by model ID — prefer DB endpoints over env-discovered
-        if (seen.has(mid)) return;
-        seen.add(mid);
+        // Deduplicate per endpoint+model so the same model ID can appear under
+        // different endpoints (e.g. gpt-5.5 under both OpenAI and OpenAI Codex).
+        const _dedup = (item.endpoint_id || item.url || '') + '\x00' + mid;
+        if (seen.has(_dedup)) return;
+        seen.add(_dedup);
         result.push({
           mid,
           display: (allDisplay[i] || mid).split('/').pop(),
@@ -685,7 +687,18 @@ export function updateModelPicker() {
     }
   }
 
-  const displayName = modelId ? modelId.split('/').pop() : 'Select model';
+  let displayName = modelId ? modelId.split('/').pop() : 'Select model';
+  if (modelId) {
+    const _epId  = (s && s.endpoint_id)  || (_pendingChat && _pendingChat.endpointId) || '';
+    const _epUrl = (s && s.endpoint_url) || (_pendingChat && _pendingChat.url)        || '';
+    const _items = window.modelsModule && window.modelsModule.getCachedItems ? window.modelsModule.getCachedItems() : [];
+    const _item  = _items.find(it =>
+      (_epId  && it.endpoint_id === _epId) ||
+      (_epUrl && it.url         === _epUrl)
+    );
+    const _epName = _item && _item.endpoint_name;
+    if (_epName) displayName += ' · ' + _epName;
+  }
   const logo = modelId ? providerLogo(modelId) : null;
   if (logo) {
     label.innerHTML = '<span class="model-picker-logo">' + logo + '</span> ' + displayName;
